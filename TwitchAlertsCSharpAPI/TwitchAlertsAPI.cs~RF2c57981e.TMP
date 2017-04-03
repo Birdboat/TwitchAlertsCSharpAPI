@@ -1,0 +1,446 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using RestSharp;
+using System.Drawing;
+using RestSharp.Authenticators;
+
+namespace TwitchAlertsCSharpAPI
+{
+    /// <summary>
+    /// Represents an application
+    /// </summary>
+    public class TwitchAlertsAPI
+    {
+        public static Uri RESTUri = new Uri("https://streamlabs.com/api/v1.0/");
+        
+        public string ClientID;
+        public string ClientSecret;
+        public Uri RedirectUri;
+        public Scope AvailableScope;
+        public string AccessToken;
+        public string RefreshToken;
+
+        RestClient Client;
+
+        public TwitchAlertsAPI(string clientid, string clientsecret, string redirecturi, Scope scope)
+        {
+            ClientID = clientid;
+            ClientSecret = clientsecret;
+            RedirectUri = new Uri(redirecturi);
+            AvailableScope = scope;
+            Client = new RestClient();
+        }
+
+        public string GetAuthorizeString()
+        {
+            var request = new RestRequest();
+            request.AddParameter("response_type", "code");
+            request.AddParameter("client_id", ClientID);
+            request.AddParameter("redirect_uri", RedirectUri.OriginalString);
+            string scope = string.Empty;
+            if (AvailableScope.HasFlag(Scope.AlertsCreate))
+            {
+                if (scope != string.Empty) scope += " ";
+                scope += "alerts.create";
+            }
+            if (AvailableScope.HasFlag(Scope.DonationsCreate))
+            {
+                if (scope != string.Empty) scope += " ";
+                scope += "donations.create";
+            }
+            if (AvailableScope.HasFlag(Scope.DonationsRead))
+            {
+                if (scope != string.Empty) scope += " ";
+                scope += "donations.read";
+            }
+            if (AvailableScope.HasFlag(Scope.LegacyToken))
+            {
+                if (scope != string.Empty) scope += " ";
+                scope += "legacy.token";
+            }
+            request.AddParameter("scope", scope);
+            Client.BaseUrl = GetSpecificUri("authorize?");
+            return Client.BuildUri(request).OriginalString;
+        }
+
+        /// <summary>
+        /// Sets the <see cref="AccessToken"/>, use <see cref="GetAuthorizeString"/>
+        /// </summary>
+        /// <param name="authcode">Authcode from <see cref="GetAuthorizeString"/></param>
+        /// <returns></returns>
+        public TokenObject GetAccessToken(string authcode)
+        {
+            Client.BaseUrl = GetSpecificUri("token");
+            RestRequest request = new RestRequest();
+            request.Method = Method.POST;
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("grant_type", "authorization_code");
+            request.AddParameter("client_id", ClientID);
+            request.AddParameter("client_secret", ClientSecret);
+            request.AddParameter("redirect_uri", RedirectUri.OriginalString);
+            request.AddParameter("code", authcode);
+            TokenObject obj = Execute<TokenObject>(request);
+            AccessToken = obj.access_token;
+            RefreshToken = obj.refresh_token;
+            return obj;
+        }
+
+        /// <summary>
+        /// Refreshes the <see cref="AccessToken"/>
+        /// </summary>
+        /// <returns></returns>
+        public TokenObject RefreshAccessToken()
+        {
+            Client.BaseUrl = GetSpecificUri("token");
+            RestRequest request = new RestRequest();
+            request.Method = Method.POST;
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("grant_type", "authorization_code");
+            request.AddParameter("client_id", ClientID);
+            request.AddParameter("client_secret", ClientSecret);
+            request.AddParameter("redirect_uri", RedirectUri.OriginalString);
+            request.AddParameter("refresh_token", RefreshToken);
+            TokenObject obj = Execute<TokenObject>(request);
+            AccessToken = obj.access_token;
+            RefreshToken = obj.refresh_token;
+            return obj;
+        }
+
+        /// <summary>
+        /// Get the user info
+        /// </summary>
+        /// <returns></returns>
+        public AuthenticatedUserObject GetUserInfo()
+        {
+            Client.BaseUrl = GetSpecificUri("user");
+            RestRequest request = new RestRequest();
+            request.AddQueryParameter("access_token", AccessToken);
+            return Execute<AuthenticatedUserObject>(request);
+        }
+
+        /// <summary>
+        /// Get donation information
+        /// </summary>
+        /// <param name="limit">How many results to return</param>
+        /// <param name="currency">The currency to use</param>
+        /// <param name="before">Before an ID</param>
+        /// <param name="after">after an ID</param>
+        /// <param name="verified">wheather to include verified sources of donations, 0 for added, 1 for verified, -1 for both</param>
+        /// <returns></returns>
+        public DonationData GetDonationInfo(int limit = 50, string currency = "USD", int before = 0, int after = 0, int verified = -1)
+        {
+            Client.BaseUrl = GetSpecificUri("donations");
+            RestRequest request = new RestRequest();
+            request.AddQueryParameter("access_token", AccessToken);
+            request.AddQueryParameter("limit", limit.ToString());
+            request.AddQueryParameter("currency", currency);
+            if (before > 0) request.AddQueryParameter("before", before.ToString());
+            if (after > 0) request.AddQueryParameter("after", after.ToString());
+            if (verified > -1) request.AddQueryParameter("verified", verified.ToString());
+            return Execute<DonationData>(request);
+        }
+
+        public DonationID CreateDonation(string name, string identifier, double donationamount, CurrencyCode currency, string message = "", string datetime = "")
+        {
+            Client.BaseUrl = GetSpecificUri("donations");
+            RestRequest request = new RestRequest();
+            request.Method = Method.POST;
+            request.AddParameter("access_token", AccessToken);
+            request.AddParameter("name", name);
+            request.AddParameter("identifier", identifier);
+            request.AddParameter("amount", donationamount.ToString());
+            request.AddParameter("currency", currency.ToString());
+            if (message != "") request.AddParameter("message", message);
+            if (datetime != "") request.AddParameter("datetime", datetime);
+            return Execute<DonationID>(request);
+        }
+
+        public AlertSuccess CreateAlert(AlertType type, string imagehref = "", string soundhref = "", string message = "", int duration = 0, Color color = default(Color))
+        {
+            Client.BaseUrl = GetSpecificUri("alerts");
+            RestRequest request = new RestRequest();
+            request.Method = Method.POST;
+            request.AddParameter("access_token", AccessToken);
+            request.AddParameter("type", type);
+            if (imagehref != "") request.AddParameter("image_href", imagehref);
+            if (soundhref != "") request.AddParameter("sound_href", soundhref);
+            if (message != "") request.AddParameter("message", message);
+            if (duration != 0) request.AddParameter("duration", duration);
+            if (color != default(Color)) request.AddParameter("special_text_color", ColorTranslator.ToHtml(color));
+            return Execute<AlertSuccess>(request);
+        }
+
+        T Execute<T>(RestRequest request) where T : new()
+        {
+            var response = Client.Execute<T>(request);
+            
+            if (response.StatusCode != System.Net.HttpStatusCode.OK || response.ErrorException != null)
+            {
+                throw new ApplicationException($"{response.StatusCode}", response.ErrorException);
+            }
+            return response.Data;
+        }
+
+        /*
+        async Task<T> ExecuteAsync<T>(RestRequest request, Action<IRestResponse<T>, RestRequestAsyncHandle> action) where T : new()
+        {
+            // var response = await Client.ExecuteAsync(request, action);
+
+            // return response;
+        }*/
+
+        string ExecuteAsString(RestRequest request)
+        {
+            var response = Client.Execute(request);
+
+            if (response.StatusCode != System.Net.HttpStatusCode.OK || response.ErrorException != null)
+            {
+                throw new ApplicationException($"{response.StatusCode}", response.ErrorException);
+            }
+            return response.Content;
+        }
+
+        Uri GetSpecificUri(string section)
+        {
+            return new Uri(RESTUri.OriginalString + section);
+        }
+
+        public static string CurrencyCodeToString(CurrencyCode code)
+        {
+            switch (code)
+            {
+                case CurrencyCode.AUD:
+                    return "Austrailian Dollar";
+                case CurrencyCode.BRL:
+                    return "Brazilian Real";
+                case CurrencyCode.CAD:
+                    return "Canadian Dollar";
+                case CurrencyCode.CZK:
+                    return "Czech Koruna";
+                case CurrencyCode.DKK:
+                    return "Danish Krone";
+                case CurrencyCode.EUR:
+                    return "Euro";
+                case CurrencyCode.HKD:
+                    return "Hong Kong Dollar";
+                case CurrencyCode.ILS:
+                    return "Israeli New Sheqel";
+                case CurrencyCode.MYR:
+                    return "Malaysian Ringgit";
+                case CurrencyCode.MXN:
+                    return "Mexican Peso";
+                case CurrencyCode.NOK:
+                    return "Norwegian Krone";
+                case CurrencyCode.NZD:
+                    return "New Zealand Dollar";
+                case CurrencyCode.PHP:
+                    return "Philippine Peso";
+                case CurrencyCode.PLN:
+                    return "Polish Zloty";
+                case CurrencyCode.GBP:
+                    return "Pound Sterling";
+                case CurrencyCode.RUB:
+                    return "Russian Ruble";
+                case CurrencyCode.SGD:
+                    return "Singapore Dollar";
+                case CurrencyCode.SEK:
+                    return "Swedish Krona";
+                case CurrencyCode.CHF:
+                    return "Swiss Franc";
+                case CurrencyCode.THB:
+                    return "Thai Baht";
+                case CurrencyCode.TRY:
+                    return "Turkish Lira";
+                case CurrencyCode.USD:
+                    return "US Dollar";
+                default:
+                    return "";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Various scopes of accessibility
+    /// </summary>
+    [Flags]
+    public enum Scope
+    {
+        DonationsCreate = 1,
+        DonationsRead = 2,
+        AlertsCreate = 4,
+        LegacyToken = 8
+    }
+
+
+    public class TokenObject
+    {
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public string refresh_token { get; set; }
+    }
+
+    /// <summary>
+    /// A fill class -- ignore
+    /// </summary>
+    public class TwitchObject
+    {
+        public string id { get; set; }
+        public string display_name { get; set; }
+        public string name { get; set; }
+    }
+
+    public class AuthenticatedUserObject
+    {
+        public TwitchObject twitch { get; set; }
+    }
+
+
+    public class UserInfo
+    {
+        public string donation_id { get; set; }
+        public string created_at { get; set; }
+        public string currency { get; set; }
+        public string amount { get; set; }
+        public string name { get; set; }
+        public string message { get; set; }
+    }
+
+    public class DonationData
+    {
+        public List<UserInfo> data { get; set; }
+    }
+
+    public class DonationID
+    {
+        public int donation_id { get; set; }
+    }
+
+    public class AlertSuccess
+    {
+        public bool success { get; set; }
+    }
+
+    public enum CurrencyCode
+    {
+        /// <summary>
+        /// Austrailian Dollar
+        /// </summary>
+        AUD,
+
+        /// <summary>
+        /// Brazilian Real
+        /// </summary>
+        BRL,
+
+        /// <summary>
+        /// Canadian Dollar
+        /// </summary>
+        CAD,
+
+        /// <summary>
+        /// Czech Koruna
+        /// </summary>
+        CZK,
+
+        /// <summary>
+        /// Danish Krone
+        /// </summary>
+        DKK,
+
+        /// <summary>
+        /// Euro
+        /// </summary>
+        EUR,
+
+        /// <summary>
+        /// Hong Kong Dollar
+        /// </summary>
+        HKD,
+
+        /// <summary>
+        /// Israeli New Sheqel
+        /// </summary>
+        ILS,
+
+        /// <summary>
+        /// Malaysian Ringgit
+        /// </summary>
+        MYR,
+
+        /// <summary>
+        /// Mexican Peso
+        /// </summary>
+        MXN,
+
+        /// <summary>
+        /// Norwegian Krone
+        /// </summary>
+        NOK,
+
+        /// <summary>
+        /// New Zealand Dollar
+        /// </summary>
+        NZD,
+
+        /// <summary>
+        /// Philippine Peso
+        /// </summary>
+        PHP,
+
+        /// <summary>
+        /// Polish Zloty
+        /// </summary>
+        PLN,
+
+        /// <summary>
+        /// Pound Sterling
+        /// </summary>
+        GBP,
+
+        /// <summary>
+        /// Russian Ruble
+        /// </summary>
+        RUB,
+
+        /// <summary>
+        /// Singapore Dollar
+        /// </summary>
+        SGD,
+
+        /// <summary>
+        /// Swedish Krona
+        /// </summary>
+        SEK,
+
+        /// <summary>
+        /// Swiss Franc
+        /// </summary>
+        CHF,
+
+        /// <summary>
+        /// Thai Baht
+        /// </summary>
+        THB,
+
+        /// <summary>
+        /// Turkish Lira
+        /// </summary>
+        TRY,
+
+        /// <summary>
+        /// US Dollar
+        /// </summary>
+        USD
+    }
+
+    public enum AlertType
+    {
+        Follow,
+        Subscription,
+        Donation,
+        Host
+    }
+}
