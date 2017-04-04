@@ -30,13 +30,13 @@ namespace TwitchAlertsCSharpAPI
         public string ClientID;
         public string ClientSecret;
         public Uri RedirectUri;
-        public Scope AvailableScope;
+        public TwitchScope AvailableScope;
         public string AccessToken;
         public string RefreshToken;
 
         RestClient Client;
 
-        public TwitchAlertsAPI(string clientid, string clientsecret, string redirecturi, Scope scope)
+        public TwitchAlertsAPI(string clientid, string clientsecret, string redirecturi, TwitchScope scope)
         {
             ClientID = clientid;
             ClientSecret = clientsecret;
@@ -52,22 +52,22 @@ namespace TwitchAlertsCSharpAPI
             request.AddParameter("client_id", ClientID);
             request.AddParameter("redirect_uri", RedirectUri.OriginalString);
             string scope = string.Empty;
-            if (AvailableScope.HasFlag(Scope.AlertsCreate))
+            if (AvailableScope.HasFlag(TwitchScope.AlertsCreate))
             {
                 if (scope != string.Empty) scope += " ";
                 scope += "alerts.create";
             }
-            if (AvailableScope.HasFlag(Scope.DonationsCreate))
+            if (AvailableScope.HasFlag(TwitchScope.DonationsCreate))
             {
                 if (scope != string.Empty) scope += " ";
                 scope += "donations.create";
             }
-            if (AvailableScope.HasFlag(Scope.DonationsRead))
+            if (AvailableScope.HasFlag(TwitchScope.DonationsRead))
             {
                 if (scope != string.Empty) scope += " ";
                 scope += "donations.read";
             }
-            if (AvailableScope.HasFlag(Scope.LegacyToken))
+            if (AvailableScope.HasFlag(TwitchScope.LegacyToken))
             {
                 if (scope != string.Empty) scope += " ";
                 scope += "legacy.token";
@@ -228,7 +228,7 @@ namespace TwitchAlertsCSharpAPI
         /// Get donation information
         /// </summary>
         /// <param name="limit">How many results to return</param>
-        /// <param name="currency">The currency to use</param>
+        /// <param name="currency">The currency to use, null if you want the currency the donation was paid in</param>
         /// <param name="before">Before an ID</param>
         /// <param name="after">after an ID</param>
         /// <param name="verified">wheather to include verified sources of donations, 0 for added, 1 for verified, -1 for both</param>
@@ -253,7 +253,7 @@ namespace TwitchAlertsCSharpAPI
         /// Get donation information
         /// </summary>
         /// <param name="limit">How many results to return</param>
-        /// <param name="currency">The currency to use</param>
+        /// <param name="currency">The currency to use, null if you want the currency the donation was paid in</param>
         /// <param name="before">Before an ID</param>
         /// <param name="after">after an ID</param>
         /// <param name="verified">wheather to include verified sources of donations, 0 for added, 1 for verified, -1 for both</param>
@@ -532,7 +532,7 @@ namespace TwitchAlertsCSharpAPI
     /// Various scopes of accessibility
     /// </summary>
     [Flags]
-    public enum Scope
+    public enum TwitchScope
     {
         DonationsRead = 1,
         DonationsCreate = 2,

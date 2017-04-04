@@ -14,7 +14,7 @@ namespace Application
         static void Main(string[] args)
         {
             TwitchAlertsAPI Api = new TwitchAlertsAPI("6nAVHJyDBzGJbvwu4bWCEXbJ9UFUvuMVvxBLlngF", "uxWMyHJjQYcZmICEYgcleQQbMe2vfou2bMbZSDt6", 
-                "https://www.google.com", Scope.DonationsRead | Scope.DonationsCreate | Scope.AlertsCreate);
+                "https://www.google.com", TwitchScope.DonationsRead | TwitchScope.DonationsCreate | TwitchScope.AlertsCreate);
             Console.WriteLine(Api.GetAuthorizeString());
             Process.Start(Api.GetAuthorizeString());
             Console.Write("Authkey: "); TokenObject obj = Api.GetAccessToken(Console.ReadLine());

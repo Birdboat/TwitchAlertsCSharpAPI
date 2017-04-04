@@ -22,7 +22,7 @@ namespace ApplicationAsync
         {
             InitializeComponent();
             Api = new TwitchAlertsAPI("6nAVHJyDBzGJbvwu4bWCEXbJ9UFUvuMVvxBLlngF", "uxWMyHJjQYcZmICEYgcleQQbMe2vfou2bMbZSDt6",
-                "https://www.google.com", Scope.AlertsCreate | Scope.DonationsCreate | Scope.DonationsRead | Scope.LegacyToken);
+                "https://www.google.com", TwitchScope.AlertsCreate | TwitchScope.DonationsCreate | TwitchScope.DonationsRead | TwitchScope.LegacyToken);
 
             TreeNode twitch = new TreeNode("Twitch"); twitch.Nodes.Add("ID"); twitch.Nodes.Add("DisplayName"); twitch.Nodes.Add("Name");
             TreeNode youtube = new TreeNode("Youtube"); youtube.Nodes.Add("ID"); youtube.Nodes.Add("Name");
