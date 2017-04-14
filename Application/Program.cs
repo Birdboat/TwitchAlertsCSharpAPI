@@ -13,7 +13,7 @@ namespace Application
     {
         static void Main(string[] args)
         {
-            TwitchAlertsAPI Api = new TwitchAlertsAPI("6nAVHJyDBzGJbvwu4bWCEXbJ9UFUvuMVvxBLlngF", "uxWMyHJjQYcZmICEYgcleQQbMe2vfou2bMbZSDt6", 
+            TwitchAlertsAPI Api = new TwitchAlertsAPI("", "", 
                 "https://www.google.com", TwitchScope.DonationsRead | TwitchScope.DonationsCreate | TwitchScope.AlertsCreate);
             Console.WriteLine(Api.GetAuthorizeString());
             Process.Start(Api.GetAuthorizeString());

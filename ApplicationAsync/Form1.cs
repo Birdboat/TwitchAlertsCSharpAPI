@@ -21,7 +21,7 @@ namespace ApplicationAsync
         public Form1()
         {
             InitializeComponent();
-            Api = new TwitchAlertsAPI("6nAVHJyDBzGJbvwu4bWCEXbJ9UFUvuMVvxBLlngF", "uxWMyHJjQYcZmICEYgcleQQbMe2vfou2bMbZSDt6",
+            Api = new TwitchAlertsAPI("", "",
                 "https://www.google.com", TwitchScope.AlertsCreate | TwitchScope.DonationsCreate | TwitchScope.DonationsRead | TwitchScope.LegacyToken);
 
             TreeNode twitch = new TreeNode("Twitch"); twitch.Nodes.Add("ID"); twitch.Nodes.Add("DisplayName"); twitch.Nodes.Add("Name");
